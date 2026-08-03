@@ -79,6 +79,27 @@ function pickNextPair(userIds, allChallenges) {
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+async function fetchCategories() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/settings?id=eq.1&select=categories`, {
+    headers: headers(),
+  });
+  const rows = await res.json();
+  return rows[0] && rows[0].categories && rows[0].categories.length > 0
+    ? rows[0].categories
+    : CATEGORIES;
+}
+
+async function updateCategories(categories) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/settings?id=eq.1`, {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify({ categories }),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+}
+
 async function createTodayChallengeIfNeeded(today) {
   const existing = await fetchTodayChallenge(today);
   if (existing) return { created: false, challenge: existing };
@@ -92,7 +113,8 @@ async function createTodayChallengeIfNeeded(today) {
   if (!pair) return { created: false, challenge: null };
 
   const [de_id, vers_id] = pair;
-  const category = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+  const categories = await fetchCategories();
+  const category = categories[Math.floor(Math.random() * categories.length)];
 
   const res = await fetch(`${SUPABASE_URL}/rest/v1/challenges`, {
     method: "POST",
