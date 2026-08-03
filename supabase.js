@@ -13,11 +13,20 @@ async function fetchUsers() {
   return res.json();
 }
 
-async function addUser(name) {
+async function verifyLogin(name, pin) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/users?name=eq.${encodeURIComponent(name)}&pin=eq.${encodeURIComponent(pin)}&select=id,name`,
+    { headers: headers() }
+  );
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+async function addUser(name, pin) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
     method: "POST",
     headers: { ...headers(), Prefer: "return=representation" },
-    body: JSON.stringify([{ name }]),
+    body: JSON.stringify([{ name, pin }]),
   });
   return res.json();
 }
