@@ -22,11 +22,22 @@ create table challenges (
 
 create unique index one_challenge_per_day on challenges (challenge_date);
 
+create table settings (
+  id integer primary key default 1,
+  categories text[] not null default array['Photo', 'Musique', 'Lieu', 'Autre']
+);
+
+insert into settings (id, categories)
+values (1, array['Photo', 'Musique', 'Lieu', 'Autre'])
+on conflict (id) do nothing;
+
 -- Sécurité : on ouvre l'accès en lecture/écriture via la clé "anon".
--- Suffisant pour un usage familial privé avec un dépôt GitHub privé,
--- mais garde bien ton URL Supabase et ta clé "anon" hors d'un dépôt public.
+-- Suffisant pour un usage familial privé, mais garde bien ton URL Supabase
+-- et ta clé "anon" hors d'un dépôt visible par des inconnus.
 alter table users enable row level security;
 alter table challenges enable row level security;
+alter table settings enable row level security;
 
 create policy "allow all on users" on users for all using (true) with check (true);
 create policy "allow all on challenges" on challenges for all using (true) with check (true);
+create policy "allow all on settings" on settings for all using (true) with check (true);
