@@ -1,4 +1,4 @@
-const CACHE_NAME = "defi-du-jour-v1";
+const CACHE_NAME = "defi-du-jour-v2";
 const APP_SHELL = [
   "./",
   "index.html",
