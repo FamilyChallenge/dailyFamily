@@ -16,6 +16,7 @@ create table challenges (
   vers_id uuid references users(id) on delete cascade,
   category text not null,
   content text,
+  media_url text,
   comment text,
   submitted_at timestamptz
 );
@@ -41,3 +42,10 @@ alter table settings enable row level security;
 create policy "allow all on users" on users for all using (true) with check (true);
 create policy "allow all on challenges" on challenges for all using (true) with check (true);
 create policy "allow all on settings" on settings for all using (true) with check (true);
+
+-- Stockage des photos/vidéos : crée en plus un bucket "challenge-media"
+-- depuis Storage -> New bucket (coche "Public bucket"), puis exécute :
+create policy "allow anon uploads to challenge-media"
+on storage.objects for insert
+to anon
+with check (bucket_id = 'challenge-media');
