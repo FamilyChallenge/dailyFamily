@@ -5,6 +5,7 @@ function todayISO() {
 }
 
 let usersCache = [];
+let categoriesCache = [];
 let currentUser = null; // { id, name }
 let isAdmin = sessionStorage.getItem("is_admin") === "true";
 
@@ -61,6 +62,38 @@ async function renderAdminParticipants() {
     btn.onclick = async () => {
       await removeUser(u.id);
       await refreshUsers();
+    };
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+}
+
+async function renderAdminCategories() {
+  categoriesCache = await fetchCategories();
+  const list = el("categories-list");
+  list.innerHTML = "";
+  categoriesCache.forEach((cat) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${cat}</span>`;
+    const btn = document.createElement("button");
+    btn.textContent = "❌";
+    btn.className = "icon-btn";
+    btn.onclick = async () => {
+      const debug = el("categories-debug");
+      debug.classList.add("hidden");
+      if (categoriesCache.length <= 1) {
+        debug.textContent = "Il doit rester au moins une catégorie.";
+        debug.classList.remove("hidden");
+        return;
+      }
+      const updated = categoriesCache.filter((c) => c !== cat);
+      try {
+        await updateCategories(updated);
+        await renderAdminCategories();
+      } catch (err) {
+        debug.textContent = "Erreur : " + err.message;
+        debug.classList.remove("hidden");
+      }
     };
     li.appendChild(btn);
     list.appendChild(li);
@@ -219,6 +252,7 @@ el("unlock-admin-btn").addEventListener("click", async () => {
     sessionStorage.setItem("is_admin", "true");
     updateAdminUI();
     await renderAdminParticipants();
+    await renderAdminCategories();
   } else if (attempt !== null) {
     alert("Mot de passe incorrect.");
   }
@@ -226,16 +260,55 @@ el("unlock-admin-btn").addEventListener("click", async () => {
 
 el("add-participant-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const debug = el("admin-debug");
+  debug.classList.add("hidden");
+  debug.textContent = "";
+
   const name = el("new-participant-name").value.trim();
   const pin = el("new-participant-pin").value.trim();
-  if (!name || !pin) return;
+
+  if (!name || !pin) {
+    debug.textContent = "Merci de remplir le nom ET le code PIN avant d'ajouter.";
+    debug.classList.remove("hidden");
+    return;
+  }
+
+  if (!SUPABASE_URL || SUPABASE_URL.includes("TON-PROJET")) {
+    debug.textContent = "config.js n'a pas été rempli avec ta vraie URL Supabase.";
+    debug.classList.remove("hidden");
+    return;
+  }
+
   try {
     await addUser(name, pin);
     el("new-participant-name").value = "";
     el("new-participant-pin").value = "";
     await refreshUsers();
   } catch (err) {
-    alert("Erreur lors de l'ajout : " + err.message);
+    debug.textContent = "Erreur lors de l'ajout : " + err.message;
+    debug.classList.remove("hidden");
+  }
+});
+
+el("add-category-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const debug = el("categories-debug");
+  debug.classList.add("hidden");
+  const input = el("new-category-name");
+  const name = input.value.trim();
+  if (!name) return;
+  if (categoriesCache.includes(name)) {
+    debug.textContent = "Cette catégorie existe déjà.";
+    debug.classList.remove("hidden");
+    return;
+  }
+  try {
+    await updateCategories([...categoriesCache, name]);
+    input.value = "";
+    await renderAdminCategories();
+  } catch (err) {
+    debug.textContent = "Erreur : " + err.message;
+    debug.classList.remove("hidden");
   }
 });
 
@@ -243,7 +316,10 @@ async function init() {
   loadSession();
   await populateLoginSelect();
   updateAdminUI();
-  if (isAdmin) await renderAdminParticipants();
+  if (isAdmin) {
+    await renderAdminParticipants();
+    await renderAdminCategories();
+  }
 
   if (currentUser) {
     await showLoggedInView();
