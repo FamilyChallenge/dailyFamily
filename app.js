@@ -13,6 +13,12 @@ function setCurrentUserId(id) {
 }
 
 let usersCache = [];
+let isAdmin = sessionStorage.getItem("is_admin") === "true";
+
+function updateAdminUI() {
+  el("admin-locked").classList.toggle("hidden", isAdmin);
+  el("add-participant-form").classList.toggle("hidden", !isAdmin);
+}
 
 function userName(id) {
   const u = usersCache.find((u) => u.id === id);
@@ -27,16 +33,20 @@ async function renderParticipants() {
   usersCache.forEach((u) => {
     const li = document.createElement("li");
     li.innerHTML = `<span>${u.name}</span>`;
-    const btn = document.createElement("button");
-    btn.textContent = "❌";
-    btn.className = "icon-btn";
-    btn.onclick = async () => {
-      await removeUser(u.id);
-      await renderAll();
-    };
-    li.appendChild(btn);
+    if (isAdmin) {
+      const btn = document.createElement("button");
+      btn.textContent = "❌";
+      btn.className = "icon-btn";
+      btn.onclick = async () => {
+        await removeUser(u.id);
+        await renderAll();
+      };
+      li.appendChild(btn);
+    }
     list.appendChild(li);
   });
+
+  updateAdminUI();
 
   const select = el("current-user-select");
   select.innerHTML = "";
@@ -180,6 +190,17 @@ el("current-user-select").addEventListener("change", async (e) => {
 });
 
 el("history-filter").addEventListener("change", renderHistory);
+
+el("unlock-admin-btn").addEventListener("click", () => {
+  const attempt = prompt("Mot de passe admin :");
+  if (attempt === ADMIN_PASSWORD) {
+    isAdmin = true;
+    sessionStorage.setItem("is_admin", "true");
+    updateAdminUI();
+  } else if (attempt !== null) {
+    alert("Mot de passe incorrect.");
+  }
+});
 
 renderAll();
 
