@@ -41,6 +41,12 @@ main {
   color: #5b4b8a;
 }
 
+.card h3 {
+  font-size: 0.95rem;
+  color: #5b4b8a;
+  margin: 1rem 0 0.4rem 0;
+}
+
 select,
 input[type="text"],
 textarea {
