@@ -33,6 +33,24 @@ function userName(id) {
   return u ? u.name : "?";
 }
 
+const VIDEO_EXTENSIONS = ["mp4", "mov", "webm", "avi", "mkv"];
+
+function renderMediaElement(url) {
+  const ext = url.split(".").pop().toLowerCase().split("?")[0];
+  if (VIDEO_EXTENSIONS.includes(ext)) {
+    const video = document.createElement("video");
+    video.src = url;
+    video.controls = true;
+    video.className = "media-preview";
+    return video;
+  }
+  const img = document.createElement("img");
+  img.src = url;
+  img.className = "media-preview";
+  img.alt = "Photo du défi";
+  return img;
+}
+
 async function populateLoginSelect() {
   usersCache = await fetchUsers();
   const select = el("login-name-select");
@@ -142,10 +160,16 @@ async function renderTodayChallenge() {
   sub.textContent = `...qui correspond à ${versName} !`;
   container.appendChild(sub);
 
-  if (challenge.content) {
+  if (challenge.submitted_at) {
     const result = document.createElement("div");
     result.className = "result-box";
-    result.innerHTML = `<strong>Résultat :</strong><p>${challenge.content}</p>`;
+    result.innerHTML = `<strong>Résultat :</strong>`;
+    if (challenge.media_url) {
+      result.appendChild(renderMediaElement(challenge.media_url));
+    }
+    if (challenge.content) {
+      result.innerHTML += `<p>${challenge.content}</p>`;
+    }
     if (challenge.comment) {
       result.innerHTML += `<p class="comment">${challenge.comment}</p>`;
     }
@@ -154,17 +178,43 @@ async function renderTodayChallenge() {
     const form = document.createElement("form");
     form.innerHTML = `
       <p>C'est ton défi aujourd'hui ! 🎯</p>
-      <textarea id="content-input" placeholder="Colle un lien, décris le lieu, ou une URL de photo..." required></textarea>
+      <input id="media-input" type="file" accept="image/*,video/*" capture="environment" />
+      <textarea id="content-input" placeholder="...ou décris le lieu / colle un lien (optionnel si tu ajoutes une photo)"></textarea>
       <input id="comment-input" type="text" placeholder="Un petit mot (optionnel)" />
       <button type="submit">Envoyer</button>
+      <p id="submit-debug" class="error hidden"></p>
     `;
     form.onsubmit = async (e) => {
       e.preventDefault();
+      const debug = el("submit-debug");
+      debug.classList.add("hidden");
       const content = el("content-input").value.trim();
       const comment = el("comment-input").value.trim();
-      if (!content) return;
-      await submitResponse(challenge.id, content, comment);
-      await renderTodayChallenge();
+      const file = el("media-input").files[0];
+
+      if (!content && !file) {
+        debug.textContent = "Ajoute une photo/vidéo ou un texte avant d'envoyer.";
+        debug.classList.remove("hidden");
+        return;
+      }
+
+      const submitBtn = form.querySelector("button[type=submit]");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Envoi en cours...";
+
+      try {
+        let mediaUrl = null;
+        if (file) {
+          mediaUrl = await uploadMedia(file, challenge.id);
+        }
+        await submitResponse(challenge.id, content, comment, mediaUrl);
+        await renderTodayChallenge();
+      } catch (err) {
+        debug.textContent = "Erreur lors de l'envoi : " + err.message;
+        debug.classList.remove("hidden");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Envoyer";
+      }
     };
     container.appendChild(form);
   } else {
@@ -189,9 +239,12 @@ async function renderHistory() {
     item.className = "history-item";
     item.innerHTML = `
       <strong>${c.challenge_date}</strong> — ${deName} ➜ ${versName} (${c.category})
-      ${c.content ? `<p>${c.content}</p>` : `<p class="comment">Pas encore répondu</p>`}
+      ${c.content ? `<p>${c.content}</p>` : c.submitted_at ? "" : `<p class="comment">Pas encore répondu</p>`}
       ${c.comment ? `<p class="comment">${c.comment}</p>` : ""}
     `;
+    if (c.media_url) {
+      item.appendChild(renderMediaElement(c.media_url));
+    }
     list.appendChild(item);
   });
 }
