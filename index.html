@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Le défi du jour</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="theme-color" content="#5b4b8a" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>🎁 Le défi du jour</h1>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Qui es-tu ?</h2>
+      <select id="current-user-select"></select>
+    </section>
+
+    <section class="card" id="today-challenge-section">
+      <h2>Défi du jour</h2>
+      <div id="today-challenge"></div>
+    </section>
+
+    <section class="card">
+      <h2>Participants</h2>
+      <ul id="participants-list"></ul>
+      <form id="add-participant-form">
+        <input id="new-participant-name" type="text" placeholder="Nom du participant" />
+        <button type="submit">Ajouter</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>📜 Historique</h2>
+      <select id="history-filter">
+        <option value="Tous">Tous</option>
+      </select>
+      <div id="history-list"></div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="supabase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
