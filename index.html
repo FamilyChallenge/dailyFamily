@@ -16,36 +16,53 @@
   </header>
 
   <main>
-    <section class="card">
-      <h2>Qui es-tu ?</h2>
-      <select id="current-user-select"></select>
+    <!-- Écran de connexion : visible uniquement si personne n'est connecté -->
+    <section class="card" id="login-section">
+      <h2>Connexion</h2>
+      <form id="login-form">
+        <select id="login-name-select"></select>
+        <input id="login-pin-input" type="password" inputmode="numeric" placeholder="Code PIN" />
+        <button type="submit">Se connecter</button>
+      </form>
+      <p id="login-error" class="error hidden">Nom ou PIN incorrect.</p>
     </section>
 
-    <section class="card" id="today-challenge-section">
-      <h2>Défi du jour</h2>
-      <div id="today-challenge"></div>
-    </section>
+    <!-- Contenu principal : visible uniquement une fois connecté -->
+    <div id="app-content" class="hidden">
+      <section class="card" id="logged-in-as">
+        <span id="current-user-name"></span>
+        <button id="logout-btn" type="button" class="icon-btn">Se déconnecter</button>
+      </section>
 
-    <section class="card">
-      <h2>Participants</h2>
-      <ul id="participants-list"></ul>
+      <section class="card" id="today-challenge-section">
+        <h2>Défi du jour</h2>
+        <div id="today-challenge"></div>
+      </section>
 
+      <section class="card">
+        <h2>📜 Historique</h2>
+        <select id="history-filter">
+          <option value="Tous">Tous</option>
+        </select>
+        <div id="history-list"></div>
+      </section>
+    </div>
+
+    <!-- Panneau admin : gestion des participants, protégé par mot de passe -->
+    <section class="card" id="admin-section">
+      <h2>Gestion des participants (admin)</h2>
       <div id="admin-locked">
-        <button id="unlock-admin-btn" type="button">🔒 Déverrouiller (gestion des participants)</button>
+        <button id="unlock-admin-btn" type="button">🔒 Déverrouiller</button>
       </div>
 
-      <form id="add-participant-form" class="hidden">
-        <input id="new-participant-name" type="text" placeholder="Nom du participant" />
-        <button type="submit">Ajouter</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h2>📜 Historique</h2>
-      <select id="history-filter">
-        <option value="Tous">Tous</option>
-      </select>
-      <div id="history-list"></div>
+      <div id="admin-panel" class="hidden">
+        <ul id="participants-list"></ul>
+        <form id="add-participant-form">
+          <input id="new-participant-name" type="text" placeholder="Nom du participant" />
+          <input id="new-participant-pin" type="text" inputmode="numeric" placeholder="Code PIN (4 chiffres)" />
+          <button type="submit">Ajouter</button>
+        </form>
+      </div>
     </section>
   </main>
 
