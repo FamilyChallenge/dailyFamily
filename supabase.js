@@ -125,14 +125,36 @@ async function createTodayChallengeIfNeeded(today) {
   return { created: true, challenge: rows[0] };
 }
 
-async function submitResponse(challengeId, content, comment) {
-  await fetch(`${SUPABASE_URL}/rest/v1/challenges?id=eq.${challengeId}`, {
+async function uploadMedia(file, challengeId) {
+  const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+  const path = `${challengeId}-${Date.now()}-${safeName}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/challenge-media/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": file.type || "application/octet-stream",
+    },
+    body: file,
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  return `${SUPABASE_URL}/storage/v1/object/public/challenge-media/${path}`;
+}
+
+async function submitResponse(challengeId, content, comment, mediaUrl) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/challenges?id=eq.${challengeId}`, {
     method: "PATCH",
     headers: headers(),
     body: JSON.stringify({
       content,
+      media_url: mediaUrl || null,
       comment,
       submitted_at: new Date().toISOString(),
     }),
   });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
 }
