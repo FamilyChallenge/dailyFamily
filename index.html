@@ -56,12 +56,22 @@
       </div>
 
       <div id="admin-panel" class="hidden">
+        <h3>Participants</h3>
         <ul id="participants-list"></ul>
         <form id="add-participant-form">
           <input id="new-participant-name" type="text" placeholder="Nom du participant" />
           <input id="new-participant-pin" type="text" inputmode="numeric" placeholder="Code PIN (4 chiffres)" />
           <button type="submit">Ajouter</button>
         </form>
+        <p id="admin-debug" class="error hidden"></p>
+
+        <h3>Catégories du jeu</h3>
+        <ul id="categories-list"></ul>
+        <form id="add-category-form">
+          <input id="new-category-name" type="text" placeholder="Nouvelle catégorie" />
+          <button type="submit">Ajouter</button>
+        </form>
+        <p id="categories-debug" class="error hidden"></p>
       </div>
     </section>
   </main>
