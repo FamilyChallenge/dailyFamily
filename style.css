@@ -112,3 +112,15 @@ ul#participants-list li {
 .history-item:last-child {
   border-bottom: none;
 }
+
+.hidden {
+  display: none !important;
+}
+
+#unlock-admin-btn {
+  background: none;
+  color: #5b4b8a;
+  border: 1px solid #5b4b8a;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.7rem;
+}
