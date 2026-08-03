@@ -4,20 +4,27 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function getCurrentUserId() {
-  return localStorage.getItem("current_user_id") || "";
-}
-
-function setCurrentUserId(id) {
-  localStorage.setItem("current_user_id", id);
-}
-
 let usersCache = [];
+let currentUser = null; // { id, name }
 let isAdmin = sessionStorage.getItem("is_admin") === "true";
 
-function updateAdminUI() {
-  el("admin-locked").classList.toggle("hidden", isAdmin);
-  el("add-participant-form").classList.toggle("hidden", !isAdmin);
+function loadSession() {
+  const saved = sessionStorage.getItem("current_user");
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+    } catch (e) {
+      currentUser = null;
+    }
+  }
+}
+
+function saveSession() {
+  if (currentUser) {
+    sessionStorage.setItem("current_user", JSON.stringify(currentUser));
+  } else {
+    sessionStorage.removeItem("current_user");
+  }
 }
 
 function userName(id) {
@@ -25,44 +32,45 @@ function userName(id) {
   return u ? u.name : "?";
 }
 
-async function renderParticipants() {
+async function populateLoginSelect() {
   usersCache = await fetchUsers();
+  const select = el("login-name-select");
+  select.innerHTML = "";
+  usersCache.forEach((u) => {
+    const opt = document.createElement("option");
+    opt.value = u.name;
+    opt.textContent = u.name;
+    select.appendChild(opt);
+  });
+}
 
+function updateAdminUI() {
+  el("admin-locked").classList.toggle("hidden", isAdmin);
+  el("admin-panel").classList.toggle("hidden", !isAdmin);
+}
+
+async function renderAdminParticipants() {
   const list = el("participants-list");
   list.innerHTML = "";
   usersCache.forEach((u) => {
     const li = document.createElement("li");
     li.innerHTML = `<span>${u.name}</span>`;
-    if (isAdmin) {
-      const btn = document.createElement("button");
-      btn.textContent = "❌";
-      btn.className = "icon-btn";
-      btn.onclick = async () => {
-        await removeUser(u.id);
-        await renderAll();
-      };
-      li.appendChild(btn);
-    }
+    const btn = document.createElement("button");
+    btn.textContent = "❌";
+    btn.className = "icon-btn";
+    btn.onclick = async () => {
+      await removeUser(u.id);
+      await refreshUsers();
+    };
+    li.appendChild(btn);
     list.appendChild(li);
   });
+}
 
-  updateAdminUI();
-
-  const select = el("current-user-select");
-  select.innerHTML = "";
-  usersCache.forEach((u) => {
-    const opt = document.createElement("option");
-    opt.value = u.id;
-    opt.textContent = u.name;
-    select.appendChild(opt);
-  });
-  const current = getCurrentUserId();
-  if (usersCache.some((u) => u.id === current)) {
-    select.value = current;
-  } else if (usersCache.length > 0) {
-    setCurrentUserId(usersCache[0].id);
-    select.value = usersCache[0].id;
-  }
+async function refreshUsers() {
+  usersCache = await fetchUsers();
+  await populateLoginSelect();
+  if (isAdmin) await renderAdminParticipants();
 }
 
 async function renderTodayChallenge() {
@@ -70,7 +78,7 @@ async function renderTodayChallenge() {
   container.innerHTML = "";
 
   if (usersCache.length < 2) {
-    container.innerHTML = "<p>Ajoute au moins 2 participants pour commencer.</p>";
+    container.innerHTML = "<p>Pas assez de participants pour tirer un défi.</p>";
     return;
   }
 
@@ -82,7 +90,7 @@ async function renderTodayChallenge() {
     btn.textContent = "🎲 Tirer le défi du jour";
     btn.onclick = async () => {
       await createTodayChallengeIfNeeded(todayISO());
-      await renderAll();
+      await renderTodayChallenge();
     };
     container.appendChild(btn);
     return;
@@ -90,7 +98,6 @@ async function renderTodayChallenge() {
 
   const deName = userName(challenge.de_id);
   const versName = userName(challenge.vers_id);
-  const currentUser = getCurrentUserId();
 
   const title = document.createElement("h3");
   title.textContent = `${deName} doit trouver : ${challenge.category}`;
@@ -108,7 +115,7 @@ async function renderTodayChallenge() {
       result.innerHTML += `<p class="comment">${challenge.comment}</p>`;
     }
     container.appendChild(result);
-  } else if (currentUser === challenge.de_id) {
+  } else if (currentUser && currentUser.id === challenge.de_id) {
     const form = document.createElement("form");
     form.innerHTML = `
       <p>C'est ton défi aujourd'hui ! 🎯</p>
@@ -122,7 +129,7 @@ async function renderTodayChallenge() {
       const comment = el("comment-input").value.trim();
       if (!content) return;
       await submitResponse(challenge.id, content, comment);
-      await renderAll();
+      await renderTodayChallenge();
     };
     container.appendChild(form);
   } else {
@@ -156,7 +163,6 @@ async function renderHistory() {
 
 function renderHistoryFilterOptions() {
   const select = el("history-filter");
-  const current = select.value;
   select.innerHTML = '<option value="Tous">Tous</option>';
   usersCache.forEach((u) => {
     const opt = document.createElement("option");
@@ -164,45 +170,85 @@ function renderHistoryFilterOptions() {
     opt.textContent = u.name;
     select.appendChild(opt);
   });
-  select.value = current || "Tous";
 }
 
-async function renderAll() {
-  await renderParticipants();
+async function showLoggedInView() {
+  el("login-section").classList.add("hidden");
+  el("app-content").classList.remove("hidden");
+  el("current-user-name").textContent = `Connecté(e) en tant que ${currentUser.name}`;
+
+  usersCache = await fetchUsers();
   renderHistoryFilterOptions();
   await renderTodayChallenge();
   await renderHistory();
 }
 
-el("add-participant-form").addEventListener("submit", async (e) => {
+function showLoginView() {
+  el("login-section").classList.remove("hidden");
+  el("app-content").classList.add("hidden");
+}
+
+el("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const input = el("new-participant-name");
-  const name = input.value.trim();
-  if (!name) return;
-  await addUser(name);
-  input.value = "";
-  await renderAll();
+  const name = el("login-name-select").value;
+  const pin = el("login-pin-input").value.trim();
+  const user = await verifyLogin(name, pin);
+  if (user) {
+    currentUser = user;
+    saveSession();
+    el("login-error").classList.add("hidden");
+    el("login-pin-input").value = "";
+    await showLoggedInView();
+  } else {
+    el("login-error").classList.remove("hidden");
+  }
 });
 
-el("current-user-select").addEventListener("change", async (e) => {
-  setCurrentUserId(e.target.value);
-  await renderTodayChallenge();
+el("logout-btn").addEventListener("click", () => {
+  currentUser = null;
+  saveSession();
+  showLoginView();
 });
 
 el("history-filter").addEventListener("change", renderHistory);
 
-el("unlock-admin-btn").addEventListener("click", () => {
+el("unlock-admin-btn").addEventListener("click", async () => {
   const attempt = prompt("Mot de passe admin :");
   if (attempt === ADMIN_PASSWORD) {
     isAdmin = true;
     sessionStorage.setItem("is_admin", "true");
     updateAdminUI();
+    await renderAdminParticipants();
   } else if (attempt !== null) {
     alert("Mot de passe incorrect.");
   }
 });
 
-renderAll();
+el("add-participant-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = el("new-participant-name").value.trim();
+  const pin = el("new-participant-pin").value.trim();
+  if (!name || !pin) return;
+  await addUser(name, pin);
+  el("new-participant-name").value = "";
+  el("new-participant-pin").value = "";
+  await refreshUsers();
+});
+
+async function init() {
+  loadSession();
+  await populateLoginSelect();
+  updateAdminUI();
+  if (isAdmin) await renderAdminParticipants();
+
+  if (currentUser) {
+    await showLoggedInView();
+  } else {
+    showLoginView();
+  }
+}
+
+init();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js");
