@@ -28,6 +28,10 @@ async function addUser(name, pin) {
     headers: { ...headers(), Prefer: "return=representation" },
     body: JSON.stringify([{ name, pin }]),
   });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText);
+  }
   return res.json();
 }
 
