@@ -229,10 +229,14 @@ el("add-participant-form").addEventListener("submit", async (e) => {
   const name = el("new-participant-name").value.trim();
   const pin = el("new-participant-pin").value.trim();
   if (!name || !pin) return;
-  await addUser(name, pin);
-  el("new-participant-name").value = "";
-  el("new-participant-pin").value = "";
-  await refreshUsers();
+  try {
+    await addUser(name, pin);
+    el("new-participant-name").value = "";
+    el("new-participant-pin").value = "";
+    await refreshUsers();
+  } catch (err) {
+    alert("Erreur lors de l'ajout : " + err.message);
+  }
 });
 
 async function init() {
