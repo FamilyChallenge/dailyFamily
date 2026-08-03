@@ -51,6 +51,7 @@ function updateAdminUI() {
 }
 
 async function renderAdminParticipants() {
+  usersCache = await fetchUsers();
   const list = el("participants-list");
   list.innerHTML = "";
   usersCache.forEach((u) => {
@@ -61,7 +62,8 @@ async function renderAdminParticipants() {
     btn.className = "icon-btn";
     btn.onclick = async () => {
       await removeUser(u.id);
-      await refreshUsers();
+      await renderAdminParticipants();
+      await populateLoginSelect();
     };
     li.appendChild(btn);
     list.appendChild(li);
