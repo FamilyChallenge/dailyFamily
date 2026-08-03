@@ -29,7 +29,12 @@
     <section class="card">
       <h2>Participants</h2>
       <ul id="participants-list"></ul>
-      <form id="add-participant-form">
+
+      <div id="admin-locked">
+        <button id="unlock-admin-btn" type="button">🔒 Déverrouiller (gestion des participants)</button>
+      </div>
+
+      <form id="add-participant-form" class="hidden">
         <input id="new-participant-name" type="text" placeholder="Nom du participant" />
         <button type="submit">Ajouter</button>
       </form>
