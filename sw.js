@@ -1,4 +1,4 @@
-const CACHE_NAME = "defi-du-jour-v9";
+const CACHE_NAME = "defi-du-jour-v10";
 const APP_SHELL = [
   "./",
   "index.html",
@@ -33,5 +33,33 @@ self.addEventListener("fetch", (event) => {
   }
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let data = { title: "Le défi du jour", body: "Nouvelle activité !" };
+  try {
+    data = event.data.json();
+  } catch (e) {
+    // payload non-JSON, on garde les valeurs par défaut
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "icons/icon-192.png",
+      badge: "icons/icon-192.png",
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow("./");
+    })
   );
 });
