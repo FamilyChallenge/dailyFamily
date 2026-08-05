@@ -227,13 +227,11 @@ async function renderTodayChallenge() {
 async function renderHistory() {
   const list = el("history-list");
   list.innerHTML = "";
-  const challenges = await fetchAllChallenges();
-  const filter = el("history-filter").value;
+  const challenges = await fetchRecentChallenges(7);
 
   challenges.forEach((c) => {
     const deName = userName(c.de_id);
     const versName = userName(c.vers_id);
-    if (filter !== "Tous" && filter !== deName && filter !== versName) return;
 
     const item = document.createElement("div");
     item.className = "history-item";
@@ -249,24 +247,12 @@ async function renderHistory() {
   });
 }
 
-function renderHistoryFilterOptions() {
-  const select = el("history-filter");
-  select.innerHTML = '<option value="Tous">Tous</option>';
-  usersCache.forEach((u) => {
-    const opt = document.createElement("option");
-    opt.value = u.name;
-    opt.textContent = u.name;
-    select.appendChild(opt);
-  });
-}
-
 async function showLoggedInView() {
   el("login-section").classList.add("hidden");
   el("app-content").classList.remove("hidden");
   el("current-user-name").textContent = `Connecté(e) en tant que ${currentUser.name}`;
 
   usersCache = await fetchUsers();
-  renderHistoryFilterOptions();
   await renderTodayChallenge();
   await renderHistory();
 }
@@ -298,7 +284,6 @@ el("logout-btn").addEventListener("click", () => {
   showLoginView();
 });
 
-el("history-filter").addEventListener("change", renderHistory);
 
 el("unlock-admin-btn").addEventListener("click", async () => {
   const attempt = prompt("Mot de passe admin :");
