@@ -119,7 +119,15 @@ ul#participants-list li {
 
 .history-item {
   border-bottom: 1px solid #eee;
-  padding: 0.6rem 0;
+  padding: 0.8rem 0;
+}
+
+.history-item strong {
+  color: #5b4b8a;
+}
+
+.history-item:first-child {
+  padding-top: 0;
 }
 
 .history-item:last-child {
@@ -156,4 +164,5 @@ ul#participants-list li {
   border: 1px solid #5b4b8a;
   font-size: 0.8rem;
   padding: 0.3rem 0.6rem;
+  margin-left: 0.4rem;
 }
