@@ -3,6 +3,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const NOTIFY_FUNCTION_URL = process.env.NOTIFY_FUNCTION_URL;
 const CATEGORIES = ["Photo", "Musique", "Lieu", "Autre"];
 
 function headers() {
@@ -99,6 +100,22 @@ async function main() {
   }
 
   console.log("Défi du jour créé avec succès.");
+
+  if (NOTIFY_FUNCTION_URL) {
+    try {
+      await fetch(NOTIFY_FUNCTION_URL, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          title: "🎁 Le défi du jour est prêt !",
+          body: `Un défi (${category}) attend d'être relevé aujourd'hui.`,
+        }),
+      });
+      console.log("Notification envoyée.");
+    } catch (err) {
+      console.error("Échec de l'envoi de la notification :", err);
+    }
+  }
 }
 
 main();
