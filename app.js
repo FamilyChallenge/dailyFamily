@@ -142,7 +142,13 @@ async function renderTodayChallenge() {
     const btn = document.createElement("button");
     btn.textContent = "🎲 Tirer le défi du jour";
     btn.onclick = async () => {
-      await createTodayChallengeIfNeeded(todayISO());
+      const result = await createTodayChallengeIfNeeded(todayISO());
+      if (result.created) {
+        await sendNotification(
+          "🎁 Le défi du jour est prêt !",
+          `${userName(result.challenge.de_id)} a un défi à relever aujourd'hui.`
+        );
+      }
       await renderTodayChallenge();
     };
     container.appendChild(btn);
@@ -208,6 +214,11 @@ async function renderTodayChallenge() {
           mediaUrl = await uploadMedia(file, challenge.id);
         }
         await submitResponse(challenge.id, content, comment, mediaUrl);
+        await sendNotification(
+          "✅ Défi relevé !",
+          `${userName(challenge.de_id)} a trouvé son ${challenge.category.toLowerCase()} pour ${userName(challenge.vers_id)}.`,
+          currentUser.id
+        );
         await renderTodayChallenge();
       } catch (err) {
         debug.textContent = "Erreur lors de l'envoi : " + err.message;
@@ -282,6 +293,24 @@ el("logout-btn").addEventListener("click", () => {
   currentUser = null;
   saveSession();
   showLoginView();
+});
+
+el("enable-notif-btn").addEventListener("click", async () => {
+  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+    alert("Les notifications ne sont pas prises en charge sur cet appareil/navigateur.");
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    alert("Notifications refusées. Tu peux les réactiver dans les réglages de ton navigateur.");
+    return;
+  }
+  try {
+    await subscribeToPush(currentUser.id);
+    alert("Notifications activées !");
+  } catch (err) {
+    alert("Erreur lors de l'activation : " + err.message);
+  }
 });
 
 
