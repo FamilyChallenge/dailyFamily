@@ -50,6 +50,17 @@ async function fetchAllChallenges() {
   return res.json();
 }
 
+async function fetchRecentChallenges(days) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - (days - 1));
+  const cutoffISO = cutoff.toISOString().slice(0, 10);
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/challenges?select=*&challenge_date=gte.${cutoffISO}&order=challenge_date.desc`,
+    { headers: headers() }
+  );
+  return res.json();
+}
+
 async function fetchTodayChallenge(today) {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/challenges?challenge_date=eq.${today}&select=*`,
@@ -156,5 +167,44 @@ async function submitResponse(challengeId, content, comment, mediaUrl) {
   });
   if (!res.ok) {
     throw new Error(await res.text());
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+async function subscribeToPush(userId) {
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+  }
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions`, {
+    method: "POST",
+    headers: { ...headers(), Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify([{ user_id: userId, subscription }]),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+}
+
+async function sendNotification(title, body, excludeUserId) {
+  try {
+    await fetch(NOTIFY_FUNCTION_URL, {
+      method: "POST",
+      headers: { ...headers(), Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      body: JSON.stringify({ title, body, excludeUserId: excludeUserId || null }),
+    });
+  } catch (err) {
+    console.error("Échec de l'envoi de la notification :", err);
   }
 }
