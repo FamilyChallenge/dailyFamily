@@ -1,0 +1,21 @@
+name: Tirage quotidien du défi
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 6h UTC = 8h à Paris en heure d'été (UTC+2). En hiver (UTC+1), ça deviendra 7h — ajuste alors à "0 7 * * *".
+  workflow_dispatch: {} # permet de le lancer manuellement depuis l'onglet Actions
+
+jobs:
+  draw:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lancer le tirage du jour
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          NOTIFY_FUNCTION_URL: ${{ secrets.NOTIFY_FUNCTION_URL }}
+        run: node scripts/daily-draw.js
