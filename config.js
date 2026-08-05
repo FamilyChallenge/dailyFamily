@@ -13,4 +13,4 @@ const ADMIN_PASSWORD = "change-moi";
 const VAPID_PUBLIC_KEY = "BMpWlwZ9aKFtH-IVbOLdR-VcrUndEUtlx_ZJS9k2vWciHv5apr7ovW_0LL7c5JNRahAhxydBhiqelfsBvxAKN0I";
 
 // URL de l'Edge Function Supabase qui envoie les notifications (à remplir après l'étape 2 du guide)
-const NOTIFY_FUNCTION_URL = "https://TON-PROJET.supabase.co/functions/v1/send-notification";
+const NOTIFY_FUNCTION_URL = "https://doyfvqihmwzxfykvtolo.supabase.co/functions/v1/send-notification";
