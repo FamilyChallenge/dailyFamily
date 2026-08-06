@@ -10,7 +10,7 @@ let currentUser = null; // { id, name }
 let isAdmin = sessionStorage.getItem("is_admin") === "true";
 
 function loadSession() {
-  const saved = sessionStorage.getItem("current_user");
+  const saved = localStorage.getItem("current_user");
   if (saved) {
     try {
       currentUser = JSON.parse(saved);
@@ -22,9 +22,9 @@ function loadSession() {
 
 function saveSession() {
   if (currentUser) {
-    sessionStorage.setItem("current_user", JSON.stringify(currentUser));
+    localStorage.setItem("current_user", JSON.stringify(currentUser));
   } else {
-    sessionStorage.removeItem("current_user");
+    localStorage.removeItem("current_user");
   }
 }
 
