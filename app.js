@@ -184,7 +184,7 @@ async function renderTodayChallenge() {
     const form = document.createElement("form");
     form.innerHTML = `
       <p>C'est ton défi aujourd'hui ! 🎯</p>
-      <input id="media-input" type="file" accept="image/*,video/*" capture="environment" />
+      <input id="media-input" type="file" accept="image/*,video/*" />
       <textarea id="content-input" placeholder="...ou décris le lieu / colle un lien (optionnel si tu ajoutes une photo)"></textarea>
       <input id="comment-input" type="text" placeholder="Un petit mot (optionnel)" />
       <button type="submit">Envoyer</button>
