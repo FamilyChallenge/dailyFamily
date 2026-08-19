@@ -120,51 +120,56 @@ async function renderAdminCategories() {
   });
 }
 
+async function renderAdminFullHistory() {
+  const list = el("admin-history-list");
+  list.innerHTML = "";
+  const challenges = await fetchAllChallenges();
+
+  if (challenges.length === 0) {
+    list.innerHTML = "<p class=\"comment\">Aucun défi pour le moment.</p>";
+    return;
+  }
+
+  challenges.forEach((c) => {
+    const deName = userName(c.de_id);
+    const versName = userName(c.vers_id);
+
+    const item = document.createElement("div");
+    item.className = "history-item";
+    item.innerHTML = `
+      <strong>${c.challenge_date}</strong>${c.is_bonus ? " 🎉 bonus" : ""} — ${deName} ➜ ${versName} (${c.category})
+      ${c.content ? `<p>${c.content}</p>` : c.submitted_at ? "" : `<p class="comment">Pas encore répondu</p>`}
+      ${c.comment ? `<p class="comment">${c.comment}</p>` : ""}
+    `;
+    if (c.media_url) {
+      item.appendChild(renderMediaElement(c.media_url));
+    }
+    list.appendChild(item);
+  });
+}
+
 async function refreshUsers() {
   usersCache = await fetchUsers();
   await populateLoginSelect();
   if (isAdmin) await renderAdminParticipants();
 }
 
-async function renderTodayChallenge() {
-  const container = el("today-challenge");
-  container.innerHTML = "";
-
-  if (usersCache.length < 2) {
-    container.innerHTML = "<p>Pas assez de participants pour tirer un défi.</p>";
-    return;
-  }
-
-  const challenge = await fetchTodayChallenge(todayISO());
-
-  if (!challenge) {
-    container.innerHTML = "<p>Aucun défi tiré aujourd'hui.</p>";
-    const btn = document.createElement("button");
-    btn.textContent = "🎲 Tirer le défi du jour";
-    btn.onclick = async () => {
-      const result = await createTodayChallengeIfNeeded(todayISO());
-      if (result.created) {
-        await sendNotification(
-          "🎁 Le défi du jour est prêt !",
-          `${userName(result.challenge.de_id)} a un défi à relever aujourd'hui.`
-        );
-      }
-      await renderTodayChallenge();
-    };
-    container.appendChild(btn);
-    return;
-  }
+function renderChallengeCard(challenge, container) {
+  const card = document.createElement("div");
+  card.className = "challenge-card";
 
   const deName = userName(challenge.de_id);
   const versName = userName(challenge.vers_id);
 
   const title = document.createElement("h3");
-  title.textContent = `${deName} doit trouver : ${challenge.category}`;
-  container.appendChild(title);
+  title.textContent = challenge.is_bonus
+    ? `🎉 Défi bonus — ${deName} doit trouver : ${challenge.category}`
+    : `${deName} doit trouver : ${challenge.category}`;
+  card.appendChild(title);
 
   const sub = document.createElement("p");
   sub.textContent = `...qui correspond à ${versName} !`;
-  container.appendChild(sub);
+  card.appendChild(sub);
 
   if (challenge.submitted_at) {
     const result = document.createElement("div");
@@ -179,24 +184,24 @@ async function renderTodayChallenge() {
     if (challenge.comment) {
       result.innerHTML += `<p class="comment">${challenge.comment}</p>`;
     }
-    container.appendChild(result);
+    card.appendChild(result);
   } else if (currentUser && currentUser.id === challenge.de_id) {
     const form = document.createElement("form");
     form.innerHTML = `
-      <p>C'est ton défi aujourd'hui ! 🎯</p>
-      <input id="media-input" type="file" accept="image/*,video/*" />
-      <textarea id="content-input" placeholder="...ou décris le lieu / colle un lien (optionnel si tu ajoutes une photo)"></textarea>
-      <input id="comment-input" type="text" placeholder="Un petit mot (optionnel)" />
+      <p>C'est ton défi${challenge.is_bonus ? " bonus" : ""} aujourd'hui ! 🎯</p>
+      <input class="media-input" type="file" accept="image/*,video/*" />
+      <textarea class="content-input" placeholder="...ou décris le lieu / colle un lien (optionnel si tu ajoutes une photo)"></textarea>
+      <input class="comment-input" type="text" placeholder="Un petit mot (optionnel)" />
       <button type="submit">Envoyer</button>
-      <p id="submit-debug" class="error hidden"></p>
+      <p class="submit-debug error hidden"></p>
     `;
     form.onsubmit = async (e) => {
       e.preventDefault();
-      const debug = el("submit-debug");
+      const debug = form.querySelector(".submit-debug");
       debug.classList.add("hidden");
-      const content = el("content-input").value.trim();
-      const comment = el("comment-input").value.trim();
-      const file = el("media-input").files[0];
+      const content = form.querySelector(".content-input").value.trim();
+      const comment = form.querySelector(".comment-input").value.trim();
+      const file = form.querySelector(".media-input").files[0];
 
       if (!content && !file) {
         debug.textContent = "Ajoute une photo/vidéo ou un texte avant d'envoyer.";
@@ -227,12 +232,47 @@ async function renderTodayChallenge() {
         submitBtn.textContent = "Envoyer";
       }
     };
-    container.appendChild(form);
+    card.appendChild(form);
   } else {
     const waiting = document.createElement("p");
     waiting.textContent = `En attente de la réponse de ${deName}...`;
-    container.appendChild(waiting);
+    card.appendChild(waiting);
   }
+
+  container.appendChild(card);
+}
+
+async function renderTodayChallenge() {
+  const container = el("today-challenge");
+  container.innerHTML = "";
+
+  if (usersCache.length < 2) {
+    container.innerHTML = "<p>Pas assez de participants pour tirer un défi.</p>";
+    return;
+  }
+
+  const challenges = await fetchTodayChallenges(todayISO());
+  const regular = challenges.find((c) => !c.is_bonus);
+
+  if (!regular) {
+    container.innerHTML = "<p>Aucun défi tiré aujourd'hui.</p>";
+    const btn = document.createElement("button");
+    btn.textContent = "🎲 Tirer le défi du jour";
+    btn.onclick = async () => {
+      const result = await createTodayChallengeIfNeeded(todayISO());
+      if (result.created) {
+        await sendNotification(
+          "🎁 Le défi du jour est prêt !",
+          `${userName(result.challenge.de_id)} a un défi à relever aujourd'hui.`
+        );
+      }
+      await renderTodayChallenge();
+    };
+    container.appendChild(btn);
+    return;
+  }
+
+  challenges.forEach((challenge) => renderChallengeCard(challenge, container));
 }
 
 async function renderHistory() {
@@ -322,8 +362,32 @@ el("unlock-admin-btn").addEventListener("click", async () => {
     updateAdminUI();
     await renderAdminParticipants();
     await renderAdminCategories();
+    await renderAdminFullHistory();
   } else if (attempt !== null) {
     alert("Mot de passe incorrect.");
+  }
+});
+
+el("add-bonus-challenge-btn").addEventListener("click", async () => {
+  const debug = el("bonus-debug");
+  debug.classList.add("hidden");
+  try {
+    const challenge = await createBonusChallenge(todayISO());
+    if (!challenge) {
+      debug.textContent = "Pas assez de participants pour tirer un défi bonus.";
+      debug.classList.remove("hidden");
+      return;
+    }
+    await sendNotification(
+      "🎉 Défi bonus disponible !",
+      `${userName(challenge.de_id)} a un défi bonus (${challenge.category}) à relever.`
+    );
+    await renderTodayChallenge();
+    await renderAdminFullHistory();
+    alert("Défi bonus lancé !");
+  } catch (err) {
+    debug.textContent = "Erreur : " + err.message;
+    debug.classList.remove("hidden");
   }
 });
 
@@ -388,6 +452,7 @@ async function init() {
   if (isAdmin) {
     await renderAdminParticipants();
     await renderAdminCategories();
+    await renderAdminFullHistory();
   }
 
   if (currentUser) {
