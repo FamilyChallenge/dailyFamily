@@ -166,3 +166,17 @@ ul#participants-list li {
   padding: 0.3rem 0.6rem;
   margin-left: 0.4rem;
 }
+
+.challenge-card {
+  padding: 0.8rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.challenge-card:last-child {
+  border-bottom: none;
+}
+
+#admin-history-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
