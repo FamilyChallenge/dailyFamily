@@ -61,13 +61,12 @@ async function fetchRecentChallenges(days) {
   return res.json();
 }
 
-async function fetchTodayChallenge(today) {
+async function fetchTodayChallenges(today) {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/challenges?challenge_date=eq.${today}&select=*`,
+    `${SUPABASE_URL}/rest/v1/challenges?challenge_date=eq.${today}&select=*&order=is_bonus.asc,created_at.asc`,
     { headers: headers() }
   );
-  const rows = await res.json();
-  return rows[0] || null;
+  return res.json();
 }
 
 function pickNextPair(userIds, allChallenges) {
@@ -112,7 +111,8 @@ async function updateCategories(categories) {
 }
 
 async function createTodayChallengeIfNeeded(today) {
-  const existing = await fetchTodayChallenge(today);
+  const todayChallenges = await fetchTodayChallenges(today);
+  const existing = todayChallenges.find((c) => !c.is_bonus);
   if (existing) return { created: false, challenge: existing };
 
   const users = await fetchUsers();
@@ -130,10 +130,35 @@ async function createTodayChallengeIfNeeded(today) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/challenges`, {
     method: "POST",
     headers: { ...headers(), Prefer: "return=representation" },
-    body: JSON.stringify([{ challenge_date: today, de_id, vers_id, category }]),
+    body: JSON.stringify([{ challenge_date: today, de_id, vers_id, category, is_bonus: false }]),
   });
   const rows = await res.json();
   return { created: true, challenge: rows[0] };
+}
+
+async function createBonusChallenge(today) {
+  const users = await fetchUsers();
+  const userIds = users.map((u) => u.id);
+  if (userIds.length < 2) return null;
+
+  const allChallenges = await fetchAllChallenges();
+  const pair = pickNextPair(userIds, allChallenges);
+  if (!pair) return null;
+
+  const [de_id, vers_id] = pair;
+  const categories = await fetchCategories();
+  const category = categories[Math.floor(Math.random() * categories.length)];
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/challenges`, {
+    method: "POST",
+    headers: { ...headers(), Prefer: "return=representation" },
+    body: JSON.stringify([{ challenge_date: today, de_id, vers_id, category, is_bonus: true }]),
+  });
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+  const rows = await res.json();
+  return rows[0];
 }
 
 async function uploadMedia(file, challengeId) {
