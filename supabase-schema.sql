@@ -18,10 +18,13 @@ create table challenges (
   content text,
   media_url text,
   comment text,
-  submitted_at timestamptz
+  submitted_at timestamptz,
+  is_bonus boolean not null default false,
+  created_at timestamptz default now()
 );
 
-create unique index one_challenge_per_day on challenges (challenge_date);
+-- Un seul défi "normal" par jour, mais plusieurs défis bonus possibles le même jour
+create unique index one_regular_challenge_per_day on challenges (challenge_date) where is_bonus = false;
 
 create table settings (
   id integer primary key default 1,
