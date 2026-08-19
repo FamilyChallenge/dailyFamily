@@ -57,7 +57,7 @@ async function main() {
   const today = todayISO();
 
   const existingRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/challenges?challenge_date=eq.${today}&select=id`,
+    `${SUPABASE_URL}/rest/v1/challenges?challenge_date=eq.${today}&is_bonus=eq.false&select=id`,
     { headers: headers() }
   );
   const existing = await existingRes.json();
@@ -91,7 +91,7 @@ async function main() {
   const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/challenges`, {
     method: "POST",
     headers: { ...headers(), Prefer: "return=representation" },
-    body: JSON.stringify([{ challenge_date: today, de_id, vers_id, category }]),
+    body: JSON.stringify([{ challenge_date: today, de_id, vers_id, category, is_bonus: false }]),
   });
 
   if (!insertRes.ok) {
