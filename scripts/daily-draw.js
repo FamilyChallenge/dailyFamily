@@ -37,14 +37,22 @@ function pickNextPair(userIds, allChallenges) {
   }
   if (pairs.length === 0) return null;
 
-  const counts = new Map(pairs.map((p) => [p.join("|"), 0]));
+  const deCounts = new Map(userIds.map((id) => [id, 0]));
+  const versCounts = new Map(userIds.map((id) => [id, 0]));
+  const pairCounts = new Map(pairs.map((p) => [p.join("|"), 0]));
+
   for (const c of allChallenges) {
+    if (deCounts.has(c.de_id)) deCounts.set(c.de_id, deCounts.get(c.de_id) + 1);
+    if (versCounts.has(c.vers_id)) versCounts.set(c.vers_id, versCounts.get(c.vers_id) + 1);
     const key = `${c.de_id}|${c.vers_id}`;
-    if (counts.has(key)) counts.set(key, counts.get(key) + 1);
+    if (pairCounts.has(key)) pairCounts.set(key, pairCounts.get(key) + 1);
   }
 
-  const minCount = Math.min(...counts.values());
-  const candidates = pairs.filter((p) => counts.get(p.join("|")) === minCount);
+  const score = ([a, b]) =>
+    deCounts.get(a) * 100 + versCounts.get(b) * 10 + pairCounts.get(`${a}|${b}`);
+
+  const minScore = Math.min(...pairs.map(score));
+  const candidates = pairs.filter((p) => score(p) === minScore);
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
