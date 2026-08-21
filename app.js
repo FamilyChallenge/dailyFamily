@@ -333,22 +333,16 @@ async function renderHistory() {
   list.innerHTML = "";
   const challenges = await fetchRecentChallenges(7);
 
-  challenges.forEach((c) => {
-    const deName = userName(c.de_id);
-    const versName = userName(c.vers_id);
-
-    const item = document.createElement("div");
-    item.className = "history-item";
-    item.innerHTML = `
-      <strong>${c.challenge_date}</strong> — ${deName} ➜ ${versName} (${c.category})
-      ${c.content ? `<p>${c.content}</p>` : c.submitted_at ? "" : `<p class="comment">Pas encore répondu</p>`}
-      ${c.comment ? `<p class="comment">${c.comment}</p>` : ""}
-    `;
-    if (c.media_url) {
-      item.appendChild(renderMediaElement(c.media_url));
-    }
-    list.appendChild(item);
-  });
+  for (const c of challenges) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "history-item";
+    const dateLabel = document.createElement("p");
+    dateLabel.className = "history-date";
+    dateLabel.textContent = c.challenge_date + (c.is_bonus ? " 🎉 bonus" : "");
+    wrapper.appendChild(dateLabel);
+    await renderChallengeCard(c, wrapper);
+    list.appendChild(wrapper);
+  }
 }
 
 async function showLoggedInView() {
