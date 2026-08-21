@@ -63,3 +63,14 @@ create table push_subscriptions (
 
 alter table push_subscriptions enable row level security;
 create policy "allow all on push_subscriptions" on push_subscriptions for all using (true) with check (true);
+
+create table challenge_comments (
+  id uuid primary key default gen_random_uuid(),
+  challenge_id uuid references challenges(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
+  text text not null,
+  created_at timestamptz default now()
+);
+
+alter table challenge_comments enable row level security;
+create policy "allow all on challenge_comments" on challenge_comments for all using (true) with check (true);
