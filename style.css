@@ -122,6 +122,12 @@ ul#participants-list li {
   padding: 0.8rem 0;
 }
 
+.history-date {
+  font-weight: 700;
+  color: #5b4b8a;
+  margin: 0 0 0.3rem 0;
+}
+
 .history-item strong {
   color: #5b4b8a;
 }
