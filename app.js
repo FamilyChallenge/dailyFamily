@@ -154,7 +154,7 @@ async function refreshUsers() {
   if (isAdmin) await renderAdminParticipants();
 }
 
-function renderChallengeCard(challenge, container) {
+async function renderChallengeCard(challenge, container) {
   const card = document.createElement("div");
   card.className = "challenge-card";
 
@@ -239,6 +239,57 @@ function renderChallengeCard(challenge, container) {
     card.appendChild(waiting);
   }
 
+  const commentsSection = document.createElement("div");
+  commentsSection.className = "comments-section";
+  commentsSection.innerHTML = "<h4>💬 Commentaires</h4>";
+
+  const commentsList = document.createElement("div");
+  commentsList.className = "comments-list";
+  const comments = await fetchComments(challenge.id);
+  if (comments.length === 0) {
+    commentsList.innerHTML = '<p class="comment">Aucun commentaire pour l\'instant.</p>';
+  } else {
+    comments.forEach((c) => {
+      const p = document.createElement("p");
+      p.className = "comment-item";
+      p.innerHTML = `<strong>${userName(c.user_id)} :</strong> ${c.text}`;
+      commentsList.appendChild(p);
+    });
+  }
+  commentsSection.appendChild(commentsList);
+
+  if (currentUser) {
+    const commentForm = document.createElement("form");
+    commentForm.className = "comment-form";
+    commentForm.innerHTML = `
+      <input type="text" class="new-comment-input" placeholder="Ajouter un commentaire..." />
+      <button type="submit">Envoyer</button>
+    `;
+    commentForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const input = commentForm.querySelector(".new-comment-input");
+      const text = input.value.trim();
+      if (!text) return;
+      const btn = commentForm.querySelector("button[type=submit]");
+      btn.disabled = true;
+      try {
+        await addComment(challenge.id, currentUser.id, text);
+        await sendNotification(
+          "💬 Nouveau commentaire",
+          `${currentUser.name} a commenté le défi de ${deName}.`,
+          currentUser.id
+        );
+        await renderTodayChallenge();
+      } catch (err) {
+        alert("Erreur lors de l'envoi du commentaire : " + err.message);
+        btn.disabled = false;
+      }
+    };
+    commentsSection.appendChild(commentForm);
+  }
+
+  card.appendChild(commentsSection);
+
   container.appendChild(card);
 }
 
@@ -272,7 +323,9 @@ async function renderTodayChallenge() {
     return;
   }
 
-  challenges.forEach((challenge) => renderChallengeCard(challenge, container));
+  for (const challenge of challenges) {
+    await renderChallengeCard(challenge, container);
+  }
 }
 
 async function renderHistory() {
