@@ -180,3 +180,31 @@ ul#participants-list li {
   max-height: 300px;
   overflow-y: auto;
 }
+
+.comments-section {
+  margin-top: 0.8rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed #ddd;
+}
+
+.comments-section h4 {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.85rem;
+  color: #5b4b8a;
+}
+
+.comment-item {
+  font-size: 0.9rem;
+  margin: 0.3rem 0;
+}
+
+.comment-form {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.comment-form input {
+  flex: 1;
+  margin-bottom: 0;
+}
